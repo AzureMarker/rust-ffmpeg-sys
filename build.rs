@@ -196,6 +196,7 @@ fn get_ffmpeg_target_os() -> String {
     let cargo_target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     match cargo_target_os.as_str() {
         "ios" => "darwin".to_string(),
+        "horizon" => "linux".to_string(),
         _ => cargo_target_os,
     }
 }
