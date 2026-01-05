@@ -243,6 +243,16 @@ fn find_sysroot() -> Option<String> {
         return Some(sysroot_path);
     }
 
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("horizon") {
+        let sysroot_path = format!("{}/arm-none-eabi", env::var("DEVKITARM").expect("Missing 3DS sysroot path (DEVKITARM env var). Make sure devkitARM is installed and properly setup."));
+
+        if !Path::new(&sysroot_path).exists() {
+            panic!("3DS sysroot path does not exist: {}", sysroot_path);
+        }
+
+        return Some(sysroot_path);
+    }
+
     println!("cargo:warning=Detected cross compilation but sysroot not provided");
     None
 }
@@ -405,6 +415,23 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
         // configure.arg(--extra-ldflags=-WL,-z,max-page-size=16384");
         // required for android
         configure.arg("--extra-cflags=-fPIC");
+    }
+
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("horizon") {
+        // 3DS target specific flags
+        let devkitpro = env::var("DEVKITPRO").expect(
+            "DEVKITPRO env var not set, make sure devkitPro is installed and properly set up.",
+        );
+        configure.arg("--cpu=armv6k");
+        configure.arg(format!(
+            "--extra-cflags=-mfloat-abi=hard -mtune=mpcore -mtp=cp15 -Wno-error=incompatible-pointer-types -I{}/libctru/include",
+            devkitpro
+        ));
+        configure.arg(format!(
+            "--extra-ldflags=-mfloat-abi=hard -specs=3dsx.specs -L{}/libctru/lib",
+            devkitpro
+        ));
+        configure.arg("--extra-libs=-lctru");
     }
 
     // control debug build
@@ -1553,6 +1580,11 @@ fn main() {
 
     if let Some(sysroot) = sysroot.as_deref() {
         builder = builder.clang_arg(format!("--sysroot={sysroot}"));
+
+        if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("horizon") {
+            // Make sure the target's headers are found
+            builder = builder.clang_arg(format!("-I{}/include", sysroot));
+        }
     }
 
     // The input headers we would like to generate
