@@ -432,6 +432,8 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
             devkitpro
         ));
         configure.arg("--extra-libs=-lctru");
+        configure.arg("--disable-pthreads");
+        configure.arg("--disable-neon");
     }
 
     // control debug build
@@ -450,8 +452,8 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
     configure.arg("--enable-static");
     configure.arg("--disable-shared");
     // windows includes threading in the standard library
-    #[cfg(not(target_env = "msvc"))]
-    {
+    // 3DS includes threading through pthread-3ds crate.
+    if !cfg!(target_env = "msvc") && env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("horizon") {
         configure.arg("--enable-pthreads");
     }
 
