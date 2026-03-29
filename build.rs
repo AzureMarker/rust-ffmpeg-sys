@@ -418,10 +418,25 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
     }
 
     if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("horizon") {
-        // 3DS target specific flags
         let devkitpro = env::var("DEVKITPRO").expect(
             "DEVKITPRO env var not set, make sure devkitPro is installed and properly set up.",
         );
+
+        // Tell FFMPEG where to find the compiler
+        let horizon_cc_path = Path::new(&devkitpro).join("devkitARM").join("bin").join("arm-none-eabi-gcc");
+        let horizon_nm_path = Path::new(&devkitpro).join("devkitARM").join("bin").join("arm-none-eabi-nm");
+        let horizon_cc_raw_path = horizon_cc_path.display().to_string();
+        let horizon_nm_raw_path = horizon_nm_path.display().to_string();
+        if !horizon_cc_path.exists() {
+            panic!("DEVKITARM CC path does not exist: {}", horizon_cc_raw_path);
+        }
+        if !horizon_nm_path.exists() {
+            panic!("DEVKITARM NM path does not exist: {}", horizon_nm_raw_path);
+        }
+        configure.arg(format!("--cc={horizon_cc_raw_path}"));
+        configure.arg(format!("--nm={horizon_nm_raw_path}"));
+
+        // 3DS target specific flags
         configure.arg("--cpu=armv6k");
         configure.arg(format!(
             "--extra-cflags=-mfloat-abi=hard -mtune=mpcore -mtp=cp15 -Wno-error=incompatible-pointer-types -I{}/libctru/include",
