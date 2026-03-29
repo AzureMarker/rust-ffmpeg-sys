@@ -424,7 +424,8 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
 
         // Tell FFMPEG where to find the toolchain
         for tool in ["cc", "nm", "ar", "ranlib"] {
-            let tool_path = Path::new(&devkitpro).join("devkitARM").join("bin").join(format!("arm-none-eabi-{tool}"));
+            let suffix = if tool == "cc" { "gcc" } else { tool };
+            let tool_path = Path::new(&devkitpro).join("devkitARM").join("bin").join(format!("arm-none-eabi-{suffix}"));
             if !tool_path.exists() {
                 panic!("DEVKITARM {} path does not exist: {}", tool, tool_path.display());
             }
