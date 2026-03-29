@@ -422,19 +422,15 @@ fn build(sysroot: Option<&str>) -> io::Result<()> {
             "DEVKITPRO env var not set, make sure devkitPro is installed and properly set up.",
         );
 
-        // Tell FFMPEG where to find the compiler
-        let horizon_cc_path = Path::new(&devkitpro).join("devkitARM").join("bin").join("arm-none-eabi-gcc");
-        let horizon_nm_path = Path::new(&devkitpro).join("devkitARM").join("bin").join("arm-none-eabi-nm");
-        let horizon_cc_raw_path = horizon_cc_path.display().to_string();
-        let horizon_nm_raw_path = horizon_nm_path.display().to_string();
-        if !horizon_cc_path.exists() {
-            panic!("DEVKITARM CC path does not exist: {}", horizon_cc_raw_path);
+        // Tell FFMPEG where to find the toolchain
+        for tool in ["cc", "nm", "ar", "ranlib"] {
+            let tool_path = Path::new(&devkitpro).join("devkitARM").join("bin").join(format!("arm-none-eabi-{tool}"));
+            if !tool_path.exists() {
+                panic!("DEVKITARM {} path does not exist: {}", tool, tool_path.display());
+            }
+
+            configure.arg(format!("--{}={}", tool, tool_path.display()));
         }
-        if !horizon_nm_path.exists() {
-            panic!("DEVKITARM NM path does not exist: {}", horizon_nm_raw_path);
-        }
-        configure.arg(format!("--cc={horizon_cc_raw_path}"));
-        configure.arg(format!("--nm={horizon_nm_raw_path}"));
 
         // 3DS target specific flags
         configure.arg("--cpu=armv6k");
